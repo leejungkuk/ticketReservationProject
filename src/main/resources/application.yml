@@ -27,6 +27,9 @@ spring:
       port: ${redis.port}
       password: ${redis.password}
 
+  jwt:
+    secretKey: ${jwt.secretKey}
+
 # log
 logging:
   level:
