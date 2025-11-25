@@ -5,8 +5,7 @@ import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import java.util.ArrayList;
-import lombok.Builder.Default;
+import java.util.Set;
 import lombok.Data;
 
 public class UserDto {
@@ -43,6 +42,26 @@ public class UserDto {
   public static class SignIn {
     private String username;
     private String password;
+  }
+
+  @Data
+  public static class UserInfo {
+    private String username;
+    private Set<String> roles;
+
+    public static UserInfo fromEntity(User user, Set<String> roles) {
+      UserInfo dto = new UserInfo();
+      dto.username = user.getUsername();
+      dto.roles = roles;
+      return dto;
+    }
+  }
+
+  @Data
+  public static class UpdateUser{
+    private String username;
+    private String password;
+    private String email;
   }
 
 }
