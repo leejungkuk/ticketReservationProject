@@ -3,24 +3,35 @@ package com.self.ticketreservationproject.service;
 import com.self.ticketreservationproject.domain.Role;
 import com.self.ticketreservationproject.domain.User;
 import com.self.ticketreservationproject.domain.UserRole;
-import com.self.ticketreservationproject.dto.UserDto;
+import com.self.ticketreservationproject.dto.user.UserRequest;
+import com.self.ticketreservationproject.exception.custom.user.UserAlreadyExsitsException;
+import com.self.ticketreservationproject.exception.custom.user.UserNotExistException;
+import com.self.ticketreservationproject.exception.custom.user.UserPasswordException;
 import com.self.ticketreservationproject.repository.RoleRepository;
 import com.self.ticketreservationproject.repository.UserRepository;
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class UserService {
+public class UserService implements UserDetailsService {
 
   private final UserRepository userRepository;
   private final RoleRepository roleRepository;
   private final PasswordEncoder passwordEncoder;
 
-  public User createUser(UserDto.RegisterRequest registerRequest) {
+  @Transactional
+  public User createUser(UserRequest.RegisterRequest registerRequest) {
     registerRequest.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
+
+    if(userRepository.existsByUsername(registerRequest.getUsername())) {
+      throw new UserAlreadyExsitsException();
+    }
 
     // role 조회
     Role role = roleRepository.findByName("ROLE_USER")
@@ -40,4 +51,42 @@ public class UserService {
 
     return userRepository.save(user);
   }
+
+  public User authenticate(UserRequest.SignInRequest userInfo) {
+    User user = userRepository.findByUsernameAndStatus(userInfo.getUsername(), 'Y')
+        .orElseThrow(UserNotExistException::new);
+
+    if(!passwordEncoder.matches(userInfo.getPassword(), user.getPassword())) {
+      throw new UserPasswordException();
+    }
+
+    return user;
+  }
+
+  @Override
+  public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+    return (UserDetails) userRepository.findByUsernameAndStatus(username, 'Y')
+        .orElseThrow(UserNotExistException::new);
+  }
+
+  @Transactional
+  public User updateUser(UserRequest.UpdateRequest request) {
+    User user = userRepository.findByUsernameAndStatus(request.getUsername(), 'Y')
+        .orElseThrow(UserNotExistException::new);
+
+    request.setPassword(passwordEncoder.encode(request.getPassword()));
+    user.updateUser(request);
+    return user;
+  }
+
+  @Transactional
+  public void deleteUser(UserRequest.UpdateRequest request) {
+    User user = userRepository.findByUsernameAndStatus(request.getUsername(), 'Y')
+        .orElseThrow(UserNotExistException::new);
+
+    // soft delete 처리
+    user.deleteUser();
+  }
+
+
 }
