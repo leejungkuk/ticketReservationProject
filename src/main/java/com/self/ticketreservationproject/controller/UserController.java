@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -68,6 +69,7 @@ public class UserController {
   }
 
   @Operation(summary = "관리자용 회원 정보 수정")
+  @PreAuthorize("hasRole('ADMIN')")
   @PatchMapping("/admin/user")
   public ResponseEntity<UpdateResponse> updateUserInfo(@RequestBody UpdateRequest request) {
     User user = userService.updateUser(request);
@@ -82,6 +84,7 @@ public class UserController {
   }
 
   @Operation(summary = "관리자용 회원 정보 삭제")
+  @PreAuthorize("hasRole('ADMIN')")
   @DeleteMapping("/admin/user")
   public ResponseEntity<?> deleteUserInfo(@RequestBody UpdateRequest request) {
     userService.deleteUser(request);

@@ -1,6 +1,5 @@
 package com.self.ticketreservationproject.security;
 
-import com.self.ticketreservationproject.service.UserService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -21,7 +20,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class JwtFilter extends OncePerRequestFilter {
 
   private final JwtUtil jwtUtil;
-  private final UserService userService;
 
   private static final String TOKEN_HEADER = "Authorization";
   private static final String TOKEN_PREFIX = "Bearer ";
@@ -45,7 +43,6 @@ public class JwtFilter extends OncePerRequestFilter {
 
   private String resolveToken(HttpServletRequest request) {
     String token = request.getHeader(TOKEN_HEADER);
-    logger.info("resolve : " + token);
 
     if (!ObjectUtils.isEmpty(token) && token.startsWith(TOKEN_PREFIX)) {
       return token.substring(TOKEN_PREFIX.length());

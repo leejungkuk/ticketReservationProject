@@ -35,7 +35,6 @@ public class SecutiryConfig {
         .authorizeHttpRequests(auth -> auth
             .requestMatchers(allowUrl).permitAll()
             .requestMatchers("/api/auth/admin/**").hasRole("ADMIN")
-            .requestMatchers("/api/auth/user/**").hasRole("USER")
             .anyRequest().authenticated()
         )
         .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);

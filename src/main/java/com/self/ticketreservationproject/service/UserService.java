@@ -3,11 +3,12 @@ package com.self.ticketreservationproject.service;
 import com.self.ticketreservationproject.domain.Role;
 import com.self.ticketreservationproject.domain.User;
 import com.self.ticketreservationproject.domain.UserRole;
-import com.self.ticketreservationproject.dto.UserDto;
+import com.self.ticketreservationproject.dto.user.UserRequest;
+import com.self.ticketreservationproject.exception.custom.user.UserAlreadyExsitsException;
+import com.self.ticketreservationproject.exception.custom.user.UserNotExistException;
+import com.self.ticketreservationproject.exception.custom.user.UserPasswordException;
 import com.self.ticketreservationproject.repository.RoleRepository;
 import com.self.ticketreservationproject.repository.UserRepository;
-import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -25,11 +26,11 @@ public class UserService implements UserDetailsService {
   private final PasswordEncoder passwordEncoder;
 
   @Transactional
-  public User createUser(UserDto.RegisterRequest registerRequest) {
+  public User createUser(UserRequest.RegisterRequest registerRequest) {
     registerRequest.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
 
     if(userRepository.existsByUsername(registerRequest.getUsername())) {
-      throw new RuntimeException("이미 존재하는 ID 입니다.");
+      throw new UserAlreadyExsitsException();
     }
 
     // role 조회
@@ -51,42 +52,37 @@ public class UserService implements UserDetailsService {
     return userRepository.save(user);
   }
 
-  public UserDto.UserInfo authenticate(UserDto.SignIn userInfo) {
+  public User authenticate(UserRequest.SignInRequest userInfo) {
     User user = userRepository.findByUsernameAndStatus(userInfo.getUsername(), 'Y')
-        .orElseThrow(() -> new RuntimeException("존재하지 않는 ID 입니다."));
-
-    // 권한 String 변환
-    Set<String> roleNames = user.getUserRoles().stream()
-        .map(userRole -> userRole.getRole().getName())
-        .collect(Collectors.toSet());
-    UserDto.UserInfo result = UserDto.UserInfo.fromEntity(user, roleNames);
+        .orElseThrow(UserNotExistException::new);
 
     if(!passwordEncoder.matches(userInfo.getPassword(), user.getPassword())) {
-      throw new RuntimeException("비밀번호가 일치하지 않습니다.");
+      throw new UserPasswordException();
     }
 
-    return result;
+    return user;
   }
 
   @Override
   public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
     return (UserDetails) userRepository.findByUsernameAndStatus(username, 'Y')
-        .orElseThrow(() -> new RuntimeException("존재하지 않는 ID 입니다."));
+        .orElseThrow(UserNotExistException::new);
   }
 
   @Transactional
-  public void updateUser(UserDto.UpdateUser updateUser) {
-    User user = userRepository.findByUsernameAndStatus(updateUser.getUsername(), 'Y')
-        .orElseThrow(() -> new RuntimeException("존재하지 않는 ID 입니다."));
+  public User updateUser(UserRequest.UpdateRequest request) {
+    User user = userRepository.findByUsernameAndStatus(request.getUsername(), 'Y')
+        .orElseThrow(UserNotExistException::new);
 
-    updateUser.setPassword(passwordEncoder.encode(updateUser.getPassword()));
-    user.updateUser(updateUser);
+    request.setPassword(passwordEncoder.encode(request.getPassword()));
+    user.updateUser(request);
+    return user;
   }
 
   @Transactional
-  public void deleteUser(UserDto.UpdateUser updateUser) {
-    User user = userRepository.findByUsernameAndStatus(updateUser.getUsername(), 'Y')
-        .orElseThrow(() -> new RuntimeException("존재하지 않는 ID 입니다."));
+  public void deleteUser(UserRequest.UpdateRequest request) {
+    User user = userRepository.findByUsernameAndStatus(request.getUsername(), 'Y')
+        .orElseThrow(UserNotExistException::new);
 
     // soft delete 처리
     user.deleteUser();
