@@ -1,14 +1,13 @@
-package com.self.ticketreservationproject.dto;
+package com.self.ticketreservationproject.dto.user;
 
 import com.self.ticketreservationproject.domain.User;
 import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import java.util.Set;
 import lombok.Data;
 
-public class UserDto {
+public class UserRequest {
 
   @Data
   public static class RegisterRequest {
@@ -27,41 +26,30 @@ public class UserDto {
     @Size(min = 8, message = "비밀번호는 최소 8자 이상이어야 합니다.")
     private String password;
 
-
     public User toEntity() {
       return User.builder()
           .username(this.username)
           .name(this.name)
           .email(this.email)
           .password(this.password)
+          .status('Y')
           .build();
     }
   }
 
   @Data
-  public static class SignIn {
+  public static class SignInRequest {
     private String username;
     private String password;
   }
 
   @Data
-  public static class UserInfo {
-    private String username;
-    private Set<String> roles;
-
-    public static UserInfo fromEntity(User user, Set<String> roles) {
-      UserInfo dto = new UserInfo();
-      dto.username = user.getUsername();
-      dto.roles = roles;
-      return dto;
-    }
-  }
-
-  @Data
-  public static class UpdateUser{
+  public static class UpdateRequest{
     private String username;
     private String password;
     private String email;
   }
+
+
 
 }

@@ -1,7 +1,7 @@
 package com.self.ticketreservationproject.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.self.ticketreservationproject.dto.UserDto;
+import com.self.ticketreservationproject.dto.user.UserRequest.UpdateRequest;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -68,7 +68,7 @@ public class User implements UserDetails {
         .collect(Collectors.toSet());
   }
 
-  public void updateUser(UserDto.UpdateUser updateUser) {
+  public void updateUser(UpdateRequest updateUser) {
     Optional.ofNullable(updateUser.getPassword()).ifPresent(password -> this.password = password);
     Optional.ofNullable(updateUser.getEmail()).ifPresent(email -> this.email = email);
   }
