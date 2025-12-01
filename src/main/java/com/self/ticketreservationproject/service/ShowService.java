@@ -12,7 +12,6 @@ import com.self.ticketreservationproject.repository.ShowScheduleRepository;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,7 +25,7 @@ public class ShowService {
 
   // 공연 등록
   public ShowInfo createShow(UploadShowInfoRequest request) {
-    if(showRepository.existsByTitle(request.getTitle())) {
+    if (showRepository.existsByTitle(request.getTitle())) {
       throw new AlreadyExistShowException();
     }
     ShowInfo showInfo = request.toEntity();
@@ -36,7 +35,7 @@ public class ShowService {
 
   // 공연 조회
   public List<ShowInfo> findShows(String title) {
-    if(!showRepository.existsByTitle(title)) {
+    if (!showRepository.existsByTitle(title)) {
       return showRepository.findAll();
     }
     return showRepository.findShowInfoByTitle(title);
@@ -50,27 +49,23 @@ public class ShowService {
   // 공연 스케줄 등록
   @Transactional
   public ShowInfo createShowSchedule(Long id, CreateScheduleRequest request) {
-    Optional<ShowInfo> show = showRepository.findById(id);
+    ShowInfo show = showRepository.findById(id).orElseThrow(ShowNotFoundException::new);
 
-    if(show.isEmpty()) {
-      throw new ShowNotFoundException();
+    for (LocalDateTime startTime : request.getStartTimes()) {
+      boolean existsInDb = showScheduleRepository.existsByShowInfoIdAndStartTime(id, startTime);
+
+      if (existsInDb) {
+        throw new DuplicateScheduleException();
+      }
+      ShowSchedule showSchedule = ShowSchedule.builder()
+          .startTime(startTime)
+          .build();
+      List<String> seats = createSeat();
+      showSchedule.generateSeats(seats, 50000);
+      show.addSchedule(showSchedule);
     }
 
-    show.ifPresent(showInfo -> {
-      for(LocalDateTime startTime : request.getStartTimes()) {
-        System.out.println(startTime);
-        boolean existsInDb = showScheduleRepository.existsByShowInfoIdAndStartTime(id, startTime);
-
-        if(existsInDb) throw new DuplicateScheduleException();
-        ShowSchedule showSchedule = ShowSchedule.builder()
-                .startTime(startTime)
-                .build();
-        List<String> seats = createSeat();
-        showSchedule.generateSeats(seats, 50000);
-        showInfo.addSchedule(showSchedule);
-      }
-    });
-    return show.get();
+    return show;
   }
 
   private List<String> createSeat() {
@@ -79,9 +74,9 @@ public class ShowService {
     int rowCount = 5;
     int seatCount = 10;
 
-    for(int r = 0; r < rowCount; r++) {
+    for (int r = 0; r < rowCount; r++) {
       char row = (char) ('A' + r);
-      for(int c = 1; c <= seatCount; c++) {
+      for (int c = 1; c <= seatCount; c++) {
         seatNumbers.add(row + String.valueOf(c));
       }
     }
@@ -94,7 +89,6 @@ public class ShowService {
 
     showRepository.delete(show);
   }
-
 
 
 }
