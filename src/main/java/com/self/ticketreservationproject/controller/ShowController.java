@@ -104,9 +104,25 @@ public class ShowController {
       @RequestBody CreateScheduleRequest request) {
 
     ShowInfo createSchedule = showService.createShowSchedule(showId, request);
+
+    List<ScheduleResponse> schedules = createSchedule.getSchedules().stream()
+        .map(s -> ScheduleResponse.builder()
+            .id(s.getId())
+            .startTime(s.getStartTime())
+            .seats(s.getSeats().stream()
+                .map(seat -> SeatResponse.builder()
+                    .id(seat.getId())
+                    .seatNum(seat.getSeatNumber())
+                    .price(seat.getPrice())
+                    .status(seat.getStatus().name())
+                    .build()
+                ).toList())
+            .build())
+        .toList();
+
     CreateScheduleResponse response = CreateScheduleResponse.builder()
         .title(createSchedule.getTitle())
-        .showSchedules(createSchedule.getSchedules())
+        .showSchedules(schedules)
         .runtime(createSchedule.getRuntime())
         .build();
     return ResponseEntity.ok(response);

@@ -1,6 +1,5 @@
 package com.self.ticketreservationproject.dto.show;
 
-import com.self.ticketreservationproject.domain.show.ShowSchedule;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.Builder;
@@ -29,7 +28,7 @@ public class ShowResponse {
   @Builder
   public static class CreateScheduleResponse {
     private String title;
-    private List<ShowSchedule> showSchedules;
+    private List<ScheduleResponse> showSchedules;
     private int runtime;
   }
 
