@@ -1,6 +1,6 @@
 package com.self.ticketreservationproject.controller;
 
-import com.self.ticketreservationproject.domain.User;
+import com.self.ticketreservationproject.domain.user.User;
 import com.self.ticketreservationproject.dto.user.UserRequest;
 import com.self.ticketreservationproject.dto.user.UserRequest.SignInRequest;
 import com.self.ticketreservationproject.dto.user.UserRequest.UpdateRequest;
@@ -15,9 +15,7 @@ import jakarta.validation.Valid;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -46,7 +44,7 @@ public class UserController {
         .message("회원가입 완료")
         .build();
 
-    return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    return ResponseEntity.ok(response);
   }
 
   @Operation(summary = "로그인 API")
@@ -69,7 +67,6 @@ public class UserController {
   }
 
   @Operation(summary = "관리자용 회원 정보 수정")
-  @PreAuthorize("hasRole('ADMIN')")
   @PatchMapping("/admin/user")
   public ResponseEntity<UpdateResponse> updateUserInfo(@RequestBody UpdateRequest request) {
     User user = userService.updateUser(request);
@@ -84,9 +81,8 @@ public class UserController {
   }
 
   @Operation(summary = "관리자용 회원 정보 삭제")
-  @PreAuthorize("hasRole('ADMIN')")
   @DeleteMapping("/admin/user")
-  public ResponseEntity<?> deleteUserInfo(@RequestBody UpdateRequest request) {
+  public ResponseEntity<DeleteResponse> deleteUserInfo(@RequestBody UpdateRequest request) {
     userService.deleteUser(request);
 
     DeleteResponse response = DeleteResponse.builder()

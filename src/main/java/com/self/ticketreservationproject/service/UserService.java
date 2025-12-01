@@ -1,8 +1,8 @@
 package com.self.ticketreservationproject.service;
 
-import com.self.ticketreservationproject.domain.Role;
-import com.self.ticketreservationproject.domain.User;
-import com.self.ticketreservationproject.domain.UserRole;
+import com.self.ticketreservationproject.domain.user.Role;
+import com.self.ticketreservationproject.domain.user.User;
+import com.self.ticketreservationproject.domain.user.UserRole;
 import com.self.ticketreservationproject.dto.user.UserRequest;
 import com.self.ticketreservationproject.exception.custom.user.UserAlreadyExsitsException;
 import com.self.ticketreservationproject.exception.custom.user.UserNotExistException;

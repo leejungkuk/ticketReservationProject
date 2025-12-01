@@ -1,6 +1,6 @@
 package com.self.ticketreservationproject.dto.user;
 
-import com.self.ticketreservationproject.domain.UserRole;
+import com.self.ticketreservationproject.domain.user.UserRole;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Builder;
@@ -22,18 +22,6 @@ public class UserResponse {
     private String username;
     private Set<String> roles;
     private String accessToken;
-
-//    public static SignInResponse toDto(User user, String accessToken) {
-//      Set<String> roleNames = user.getUserRoles().stream()
-//          .map(userRole -> userRole.getRole().getName())
-//          .collect(Collectors.toSet());
-//
-//      return SignInResponse.builder()
-//          .username(user.getUsername())
-//          .roles(roleNames)
-//          .accessToken(accessToken)
-//          .build();
-//    }
 
     public static Set<String> roleTypeCasting(Set<UserRole> userRoles) {
       return userRoles.stream()

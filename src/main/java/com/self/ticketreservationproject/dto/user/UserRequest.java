@@ -1,6 +1,6 @@
 package com.self.ticketreservationproject.dto.user;
 
-import com.self.ticketreservationproject.domain.User;
+import com.self.ticketreservationproject.domain.user.User;
 import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
