@@ -1,4 +1,4 @@
-package com.self.ticketreservationproject.domain;
+package com.self.ticketreservationproject.domain.user;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.self.ticketreservationproject.dto.user.UserRequest.UpdateRequest;

@@ -1,6 +1,6 @@
 package com.self.ticketreservationproject;
 
-import com.self.ticketreservationproject.domain.User;
+import com.self.ticketreservationproject.domain.user.User;
 import com.self.ticketreservationproject.dto.user.UserRequest;
 import com.self.ticketreservationproject.service.UserService;
 import org.junit.jupiter.api.Test;
