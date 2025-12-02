@@ -31,16 +31,21 @@ public class ShowInfo {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
+
   private String title;
   private String description;
+
   @CreatedDate
   @Column(name = "created_at", updatable = false)
   private LocalDateTime createdAt;
+
   @LastModifiedDate
   @Column(name = "updated_at")
   private LocalDateTime updatedAt;
+
   @Column(name = "runtime")
-  private int runtime;
+  private int runtime; // 분 단위
+
   @OneToMany(mappedBy = "showInfo", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<ShowSchedule> schedules = new ArrayList<>();
 

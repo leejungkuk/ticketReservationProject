@@ -17,9 +17,7 @@ public class ShowRequest {
     @NotBlank
     @Size(min = 1, max = 200, message = "제목은 1자 이상 200자 이하여야 합니다.")
     private String title;
-
     private String description;
-
     @NotNull
     private int runtime;
 

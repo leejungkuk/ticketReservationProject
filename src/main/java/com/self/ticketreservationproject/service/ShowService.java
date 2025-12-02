@@ -23,6 +23,10 @@ public class ShowService {
   private final ShowRepository showRepository;
   private final ShowScheduleRepository showScheduleRepository;
 
+  private final int PRICE = 50000;
+  private final int ROW_COUNT = 5;
+  private final int SEAT_COUNT = 10;
+
   // 공연 등록
   public ShowInfo createShow(UploadShowInfoRequest request) {
     if (showRepository.existsByTitle(request.getTitle())) {
@@ -61,7 +65,7 @@ public class ShowService {
           .startTime(startTime)
           .build();
       List<String> seats = createSeat();
-      showSchedule.generateSeats(seats, 50000);
+      showSchedule.generateSeats(seats, PRICE);
       show.addSchedule(showSchedule);
     }
 
@@ -71,12 +75,10 @@ public class ShowService {
   private List<String> createSeat() {
     List<String> seatNumbers = new ArrayList<>();
 
-    int rowCount = 5;
-    int seatCount = 10;
 
-    for (int r = 0; r < rowCount; r++) {
+    for (int r = 0; r < ROW_COUNT; r++) {
       char row = (char) ('A' + r);
-      for (int c = 1; c <= seatCount; c++) {
+      for (int c = 1; c <= SEAT_COUNT; c++) {
         seatNumbers.add(row + String.valueOf(c));
       }
     }
