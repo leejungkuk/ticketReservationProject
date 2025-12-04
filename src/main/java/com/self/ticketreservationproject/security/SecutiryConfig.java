@@ -35,6 +35,7 @@ public class SecutiryConfig {
         .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(auth -> auth
             .requestMatchers(allowUrl).permitAll()
+            .requestMatchers("/api/tickets/**").hasRole("USER")
             .requestMatchers(HttpMethod.GET, "/api/shows/**").hasRole("USER")
             .requestMatchers("/api/auth/admin/**",
             "/api/shows/**")
