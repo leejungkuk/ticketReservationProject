@@ -39,8 +39,11 @@ public class ShowRequest {
   }
 
   @Data
-  public static class DeleteShowRequest {
-    private Long id;
+  public static class SeatReserveRequest {
+    @NotEmpty
+    private List<Long> seatsIds;
+    @NotNull
+    private String userId;
   }
 
 }

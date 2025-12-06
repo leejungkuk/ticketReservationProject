@@ -7,8 +7,8 @@ import com.self.ticketreservationproject.dto.show.ShowRequest.UploadShowInfoRequ
 import com.self.ticketreservationproject.exception.custom.show.AlreadyExistShowException;
 import com.self.ticketreservationproject.exception.custom.show.DuplicateScheduleException;
 import com.self.ticketreservationproject.exception.custom.show.ShowNotFoundException;
-import com.self.ticketreservationproject.repository.ShowRepository;
-import com.self.ticketreservationproject.repository.ShowScheduleRepository;
+import com.self.ticketreservationproject.repository.show.ShowRepository;
+import com.self.ticketreservationproject.repository.show.ShowScheduleRepository;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;

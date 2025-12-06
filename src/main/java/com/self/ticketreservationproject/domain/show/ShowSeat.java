@@ -42,9 +42,15 @@ public class ShowSeat {
 
   private int price;
 
+  @Column(name = "hold_user_id")
+  private Long holdUserId;
+
   @LastModifiedDate
   @Column(name = "updated_at", nullable = false)
   private LocalDateTime updatedAt;
+
+  @Column(name = "hold_start_at")
+  private LocalDateTime holdStartTime;
 
   public void assignToSchedule(ShowSchedule schedule) {
     this.showSchedule = schedule;

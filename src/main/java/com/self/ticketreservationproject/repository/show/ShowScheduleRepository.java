@@ -1,4 +1,4 @@
-package com.self.ticketreservationproject.repository;
+package com.self.ticketreservationproject.repository.show;
 
 import com.self.ticketreservationproject.domain.show.ShowSchedule;
 import java.time.LocalDateTime;

@@ -1,4 +1,4 @@
-package com.self.ticketreservationproject.repository;
+package com.self.ticketreservationproject.repository.user;
 
 import com.self.ticketreservationproject.domain.user.Role;
 import java.util.Optional;
