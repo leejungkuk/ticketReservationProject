@@ -38,7 +38,7 @@ public class ReservationController {
     return ResponseEntity.ok(response);
   }
 
-  @Operation
+  @Operation(summary = "좌석 예매 확정")
   @PostMapping("/db/confirm")
   public ResponseEntity<ConfirmResponse> confirm(@RequestBody ConfirmRequest request) {
     String username = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -56,6 +56,33 @@ public class ReservationController {
     String username = SecurityContextHolder.getContext().getAuthentication().getName();
 
     ConfirmResponse response = reservationService.getReservationDetail(reservationId, username);
+
+    return ResponseEntity.ok(response);
+  }
+
+  @Operation(summary = "좌석 HOLD with Redis")
+  @PostMapping("/redis/reserve")
+  public ResponseEntity<ReserveResponse> reserveWithRedis(@RequestBody ReserveRequest request) {
+    String username = SecurityContextHolder.getContext().getAuthentication().getName();
+    request.setUsername(username);
+
+    reservationService.reserveSeatWithRedis(request);
+
+    ReserveResponse response = ReserveResponse.builder()
+        .message("좌석 HOLD 완료")
+        .build();
+
+    return ResponseEntity.ok(response);
+  }
+
+  @Operation(summary = "좌석 예매 확정 with Redis")
+  @PostMapping("/redis/confirm")
+  public ResponseEntity<ConfirmResponse> confirmWithRedis(@RequestBody ConfirmRequest request) {
+    String username = SecurityContextHolder.getContext().getAuthentication().getName();
+    request.setUsername(username);
+
+    ConfirmResponse response = reservationService.confirmSeatWithRedis(request);
+    response.setMessage("예매 완료되었습니다.");
 
     return ResponseEntity.ok(response);
   }

@@ -32,6 +32,7 @@ public class ShowSeatRepositoryCustomImpl implements ShowSeatRepositoryCustom {
     return queryFactory
         .update(seat)
         .set(seat.status, SeatStatus.RESERVED)
+        .set(seat.updatedAt, LocalDateTime.now())
         .where(seat.id.eq(seatId).and(seat.status.eq(SeatStatus.HOLD)))
         .execute();
   }
@@ -47,4 +48,29 @@ public class ShowSeatRepositoryCustomImpl implements ShowSeatRepositoryCustom {
         .where(seat.status.eq(SeatStatus.HOLD).and(seat.holdStartTime.loe(expireTime)))
         .execute();
   }
+
+  @Override
+  public boolean isConfirmed(long seatId) {
+    Integer count = queryFactory
+        .selectOne()
+        .from(seat)
+        .where(seat.id.eq(seatId).and(seat.status.eq(SeatStatus.RESERVED)))
+        .fetchFirst();
+
+    return count != null;
+  }
+
+  @Override
+  public long confirmSeat(long seatId, long userId, LocalDateTime holdTime) {
+    return queryFactory
+        .update(seat)
+        .set(seat.status, SeatStatus.RESERVED)
+        .set(seat.updatedAt, LocalDateTime.now())
+        .set(seat.holdUserId, userId)
+        .set(seat.holdStartTime, holdTime)
+        .where(seat.id.eq(seatId).and(seat.status.eq(SeatStatus.AVAILABLE)))
+        .execute();
+  }
+
+
 }
