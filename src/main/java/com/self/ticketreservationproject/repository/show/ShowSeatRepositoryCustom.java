@@ -11,5 +11,5 @@ public interface ShowSeatRepositoryCustom {
 
   boolean isConfirmed(long seatId);
 
-  long confirmSeat (long seatId, long userId, LocalDateTime holdTime);
+  long confirmSeatWithRedis (long seatId, long userId);
 }

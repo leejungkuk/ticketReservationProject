@@ -17,7 +17,6 @@ import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
-import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -108,7 +107,6 @@ public class ReservationService {
     long userId = getUserId(request.getUsername());
     long seatId = request.getSeatId();
     RLock lock = redissonClient.getLock("lock:seat:" + seatId);
-    RMap<String, Object> map = redissonClient.getMap("map:seat:" + seatId);
 
     try {
 
@@ -124,10 +122,6 @@ public class ReservationService {
       if (!success) {
         throw new SeatAlreadyTakenException();
       }
-
-      map.put("holdTime", LocalDateTime.now().toString());
-      map.expire(5, TimeUnit.MINUTES);
-
 
     } catch (InterruptedException e) {
       throw new SeatAlreadyTakenException();
@@ -149,7 +143,6 @@ public class ReservationService {
 
     for (Long seatId : seats) {
       RLock lock = redissonClient.getLock("lock:seat:" + seatId);
-      RMap<String, Object> map = redissonClient.getMap("map:seat:" + seatId);
 
       try {
 
@@ -162,11 +155,7 @@ public class ReservationService {
           throw new ConfirmFailedException();
         }
 
-        LocalDateTime holdTime = map.get("holdTime") != null
-            ? LocalDateTime.parse((String) map.get("holdTime"))
-            : null;
-
-        long updated = showSeatRepository.confirmSeat(seatId, userId, holdTime);
+        long updated = showSeatRepository.confirmSeatWithRedis(seatId, userId);
         if (updated == 0) {
           throw new ConfirmFailedException();
         }

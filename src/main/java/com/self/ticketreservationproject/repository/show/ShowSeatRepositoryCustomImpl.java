@@ -61,13 +61,13 @@ public class ShowSeatRepositoryCustomImpl implements ShowSeatRepositoryCustom {
   }
 
   @Override
-  public long confirmSeat(long seatId, long userId, LocalDateTime holdTime) {
+  public long confirmSeatWithRedis(long seatId, long userId) {
     return queryFactory
         .update(seat)
         .set(seat.status, SeatStatus.RESERVED)
         .set(seat.updatedAt, LocalDateTime.now())
         .set(seat.holdUserId, userId)
-        .set(seat.holdStartTime, holdTime)
+//        .set(seat.holdStartTime, holdTime)
         .where(seat.id.eq(seatId).and(seat.status.eq(SeatStatus.AVAILABLE)))
         .execute();
   }

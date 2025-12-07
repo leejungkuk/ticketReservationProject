@@ -24,7 +24,7 @@ public interface ShowSeatRepository extends JpaRepository<ShowSeat, Long>, ShowS
 
   boolean isConfirmed(long seatId);
 
-  long confirmSeat (long seatId, long userId, LocalDateTime holdTime); // redis용
+  long confirmSeatWithRedis (long seatId, long userId); // redis용
 
   // query for test
   @Query("select s.showSchedule.id from ShowSeat s where s.id = :id")
