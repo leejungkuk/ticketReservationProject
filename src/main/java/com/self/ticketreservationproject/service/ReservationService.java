@@ -125,9 +125,7 @@ public class ReservationService {
         throw new SeatAlreadyTakenException();
       }
 
-      String holdTime = map.put("holdTime", LocalDateTime.now()).toString();
-
-      map.put("holdTime", holdTime);
+      map.put("holdTime", LocalDateTime.now().toString());
       map.expire(5, TimeUnit.MINUTES);
 
 
