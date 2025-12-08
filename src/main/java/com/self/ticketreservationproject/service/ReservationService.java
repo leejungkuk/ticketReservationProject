@@ -13,9 +13,11 @@ import com.self.ticketreservationproject.repository.show.ShowSeatRepository;
 import com.self.ticketreservationproject.repository.user.UserRepository;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Scheduled;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +31,9 @@ public class ReservationService {
   private final ReservationSeatRepository reservationSeatRepository;
   private final UserRepository userRepository;
   private static volatile LocalDateTime lastActivity = LocalDateTime.now();
+  private final RedissonClient redissonClient;
+  private final RedisService redisService;
+  private final int FIX_MILLIS = 60000;
 
   @Transactional
   public void reserveSeat(ReserveRequest request) {
@@ -59,6 +64,10 @@ public class ReservationService {
       }
     }
 
+    // 성능테스트용 scheduleId
+    long scheduleId = showSeatRepository.findScheduleIdById(seats.get(0));
+    request.setScheduleId(scheduleId);
+
     Booking saved = bookingRepository.save(request.toEntity(userId));
 
     for (long seat : seats) {
@@ -68,10 +77,10 @@ public class ReservationService {
     return bookingRepository.findReservationDetail(saved.getId());
   }
 
-  @Scheduled(fixedRate = 60000) // 1분마다 실행
+  //  @Scheduled(fixedRate = FIX_MILLIS) // 1분마다 실행
   @Transactional
   public void releaseExpiredHolds() {
-    if(lastActivity.isBefore(LocalDateTime.now().minusMinutes(10))) {
+    if (lastActivity.isBefore(LocalDateTime.now().minusMinutes(10))) {
       log.info("Release expired holds");
       return; // 최근 10분 동안 예약 활동 없으면 자동해제 실행 X
     }
@@ -90,6 +99,85 @@ public class ReservationService {
   private long getUserId(String username) {
     long userId = userRepository.findUserIdByUsernameAndStatus(username, 'Y');
     return userId;
+  }
+
+  // service with redis
+  @Transactional
+  public void reserveSeatWithRedis(ReserveRequest request) {
+    long userId = getUserId(request.getUsername());
+    long seatId = request.getSeatId();
+    RLock lock = redissonClient.getLock("lock:seat:" + seatId);
+
+    try {
+
+      if (!lock.tryLock(3, TimeUnit.SECONDS)) {
+        throw new SeatAlreadyTakenException();
+      }
+
+      if (showSeatRepository.isConfirmed(seatId)) {
+        throw new SeatAlreadyTakenException();
+      }
+
+      boolean success = redisService.holdSeat(request, userId);
+      if (!success) {
+        throw new SeatAlreadyTakenException();
+      }
+
+    } catch (InterruptedException e) {
+      throw new SeatAlreadyTakenException();
+    } finally {
+      if (lock.isHeldByCurrentThread()) {
+        lock.unlock();
+      }
+    }
+  }
+
+  @Transactional
+  public ConfirmResponse confirmSeatWithRedis(ConfirmRequest request) {
+    long userId = getUserId(request.getUsername());
+    List<Long> seats = request.getSeatIds();
+
+    // 성능 테스트용 scheduleId
+    long scheduleId = showSeatRepository.findScheduleIdById(seats.get(0));
+    request.setScheduleId(scheduleId);
+
+    for (Long seatId : seats) {
+      RLock lock = redissonClient.getLock("lock:seat:" + seatId);
+
+      try {
+
+        boolean locked = lock.tryLock(3, 5, TimeUnit.SECONDS);
+        if (!locked) {
+          throw new ConfirmFailedException();
+        }
+
+        if (!redisService.isHeldByUser(seatId, userId)) {
+          throw new ConfirmFailedException();
+        }
+
+        long updated = showSeatRepository.confirmSeatWithRedis(seatId, userId);
+        if (updated == 0) {
+          throw new ConfirmFailedException();
+        }
+
+        redisService.releaseSeat(seatId);
+
+      } catch (InterruptedException e) {
+        throw new ConfirmFailedException();
+      } finally {
+        if (lock.isHeldByCurrentThread()) {
+          lock.unlock();
+        }
+      }
+    }
+
+    Booking saved = bookingRepository.save(request.toEntity(userId));
+
+    for (long seatId : seats) {
+      reservationSeatRepository.save(request.toEntity(saved.getId(), seatId));
+    }
+
+    return bookingRepository.findReservationDetail(saved.getId());
   }
 
 }

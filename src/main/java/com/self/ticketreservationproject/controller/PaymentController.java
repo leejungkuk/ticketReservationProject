@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class PaymentController {
 
-  @PostMapping("/confirm")
+  @PostMapping
   public ResponseEntity<PaymentResponse> confirmPayment(@RequestBody PaymentRequest request) {
     boolean isSuccess = mockPayment(request);
 
