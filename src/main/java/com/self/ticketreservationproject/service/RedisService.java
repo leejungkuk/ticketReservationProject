@@ -14,12 +14,13 @@ public class RedisService {
 
   private final StringRedisTemplate redisTemplate;
   private final RedissonClient redissonClient;
+  private final int HOLD_DURATION_MINUTES = 5;
 
   public boolean holdSeat(ReserveRequest request, long userId) {
     Boolean result = redisTemplate.opsForValue().setIfAbsent(
         key(request.getSeatId()),
         String.valueOf(userId),
-        Duration.ofMinutes(5)
+        Duration.ofMinutes(HOLD_DURATION_MINUTES)
     );
     return result != null && result;
   }
