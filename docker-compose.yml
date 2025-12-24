@@ -1,6 +1,19 @@
 version: '3'
 
 services:
+  tr-app:
+    container_name: tr-app
+#    build: .
+    image: siro5643/tr-app:latest
+    ports:
+      - "80:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+    networks:
+      - tr-network
+    depends_on:
+      - tr-db
+      - tr-redis
   tr-db:
     image: mysql:8.0.37
     container_name: tr-mysql
@@ -22,8 +35,12 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/var/lib/redis
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
     networks:
       - tr-network
+    command:
+      - redis-server
+      - /usr/local/etc/redis/redis.conf
 
 networks:
   tr-network:

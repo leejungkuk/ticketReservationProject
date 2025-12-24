@@ -1,6 +1,0 @@
-singleServerConfig:
-  address: "redis://127.0.0.1:6379"
-  connectionMinimumIdleSize: 10
-  connectionPoolSize: 64
-  idleConnectionTimeout: 10000
-  connectTimeout: 100000
