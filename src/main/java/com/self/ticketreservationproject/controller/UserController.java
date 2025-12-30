@@ -52,13 +52,13 @@ public class UserController {
   public ResponseEntity<SignInResponse> signin(@RequestBody SignInRequest request) {
     User user = userService.authenticate(request);
 
-    // 권한 변경
-    Set<String> role = SignInResponse.roleTypeCasting(user.getUserRoles());
-    String token = jwtUtil.generateToken(user.getUsername(), role);
+    // 권한 조회
+    Set<String> roles = userService.getRoles(user.getId());
+    String token = jwtUtil.generateToken(user.getUsername(), roles);
 
     SignInResponse response = SignInResponse.builder()
         .username(user.getUsername())
-        .roles(role)
+        .roles(roles)
         .accessToken(token)
         .build();
 
