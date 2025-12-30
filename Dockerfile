@@ -1,4 +1,4 @@
-FROM openjdk:17.0.1-jdk
+FROM amazoncorretto:17-al2023-jdk
 WORKDIR /app
 ARG JAR_FILE=build/libs/*.jar
 COPY ${JAR_FILE} app.jar
