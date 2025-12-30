@@ -8,37 +8,38 @@ import com.self.ticketreservationproject.exception.custom.user.UserAlreadyExsits
 import com.self.ticketreservationproject.exception.custom.user.UserNotExistException;
 import com.self.ticketreservationproject.exception.custom.user.UserPasswordException;
 import com.self.ticketreservationproject.repository.user.RoleRepository;
+import com.self.ticketreservationproject.repository.user.UserQueryRepository;
 import com.self.ticketreservationproject.repository.user.UserRepository;
+import com.self.ticketreservationproject.repository.user.UserRoleRepository;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class UserService implements UserDetailsService {
+public class UserService {
 
   private final UserRepository userRepository;
+  private final UserRoleRepository userRoleRepository;
   private final RoleRepository roleRepository;
+  private final UserQueryRepository userQueryRepository;
   private final PasswordEncoder passwordEncoder;
 
   @Transactional
   public User createUser(UserRequest.RegisterRequest registerRequest) {
-    registerRequest.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
 
     if(userRepository.existsByUsername(registerRequest.getUsername())) {
       throw new UserAlreadyExsitsException();
     }
 
+    registerRequest.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
+    User user = userRepository.save(registerRequest.toEntity());
+
     // role 조회
     Role role = roleRepository.findByName("ROLE_USER")
         .orElseThrow(() -> new RuntimeException("Role not found"));
-
-    // entity로 변환
-    User user = registerRequest.toEntity();
 
     // role 추가
     UserRole userRole = UserRole.builder()
@@ -46,10 +47,9 @@ public class UserService implements UserDetailsService {
         .user(user)
         .build();
 
-    // user entity에 추가
-    user.getUserRoles().add(userRole);
+    userRoleRepository.save(userRole);
 
-    return userRepository.save(user);
+    return user;
   }
 
   public User authenticate(UserRequest.SignInRequest userInfo) {
@@ -63,10 +63,8 @@ public class UserService implements UserDetailsService {
     return user;
   }
 
-  @Override
-  public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-    return (UserDetails) userRepository.findByUsernameAndStatus(username, 'Y')
-        .orElseThrow(UserNotExistException::new);
+  public Set<String> getRoles(Long userId) {
+    return userQueryRepository.findRoleNamesByUserId(userId);
   }
 
   @Transactional

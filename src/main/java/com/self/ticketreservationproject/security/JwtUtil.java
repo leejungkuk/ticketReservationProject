@@ -1,6 +1,6 @@
 package com.self.ticketreservationproject.security;
 
-import com.self.ticketreservationproject.service.UserService;
+import com.self.ticketreservationproject.service.CustomUserService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
@@ -27,7 +27,7 @@ public class JwtUtil {
   @Value("${spring.jwt.secretKey}")
   private String secretKey;
 
-  private final UserService userService;
+  private final CustomUserService customUserService;
 
   public String generateToken(String username, Set<String> roles) {
     Claims claims = Jwts.claims().setSubject(username);
@@ -45,7 +45,7 @@ public class JwtUtil {
   }
 
   public Authentication getAuthentication(String jwt) {
-    UserDetails userDetails = userService.loadUserByUsername(getUsername(jwt));
+    UserDetails userDetails = customUserService.loadUserByUsername(getUsername(jwt));
     return new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());
   }
 
