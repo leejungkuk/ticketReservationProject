@@ -67,6 +67,12 @@ public class UserService {
     return userQueryRepository.findRoleNamesByUserId(userId);
   }
 
+  public Set<String> getRolesByUsername(String username) {
+    User user = userRepository.findByUsernameAndStatus(username, 'Y')
+        .orElseThrow(UserNotExistException::new);
+    return getRoles(user.getId());
+  }
+
   @Transactional
   public User updateUser(UserRequest.UpdateRequest request) {
     User user = userRepository.findByUsernameAndStatus(request.getUsername(), 'Y')

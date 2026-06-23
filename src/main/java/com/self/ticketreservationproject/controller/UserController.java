@@ -2,6 +2,7 @@ package com.self.ticketreservationproject.controller;
 
 import com.self.ticketreservationproject.domain.user.User;
 import com.self.ticketreservationproject.dto.user.UserRequest;
+import com.self.ticketreservationproject.dto.user.UserRequest.RefreshTokenRequest;
 import com.self.ticketreservationproject.dto.user.UserRequest.SignInRequest;
 import com.self.ticketreservationproject.dto.user.UserRequest.UpdateRequest;
 import com.self.ticketreservationproject.dto.user.UserResponse.DeleteResponse;
@@ -9,6 +10,7 @@ import com.self.ticketreservationproject.dto.user.UserResponse.RegisterResponse;
 import com.self.ticketreservationproject.dto.user.UserResponse.SignInResponse;
 import com.self.ticketreservationproject.dto.user.UserResponse.UpdateResponse;
 import com.self.ticketreservationproject.security.JwtUtil;
+import com.self.ticketreservationproject.service.RefreshTokenService;
 import com.self.ticketreservationproject.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
@@ -31,6 +33,7 @@ public class UserController {
 
   private final UserService userService;
   private final JwtUtil jwtUtil;
+  private final RefreshTokenService refreshTokenService;
 
   @Operation(summary = "회원 가입 API")
   @PostMapping("/signup")
@@ -54,15 +57,17 @@ public class UserController {
 
     // 권한 조회
     Set<String> roles = userService.getRoles(user.getId());
-    String token = jwtUtil.generateToken(user.getUsername(), roles);
+    String accessToken = jwtUtil.generateToken(user.getUsername(), roles);
+    String refreshToken = refreshTokenService.createRefreshToken(user.getUsername());
 
     SignInResponse response = SignInResponse.builder()
         .username(user.getUsername())
         .roles(roles)
-        .accessToken(token)
+        .accessToken(accessToken)
+        .refreshToken(refreshToken)
         .build();
 
-    log.info(token);
+    log.info("User signed in: {}", user.getUsername());
     return ResponseEntity.ok(response);
   }
 
@@ -87,6 +92,56 @@ public class UserController {
 
     DeleteResponse response = DeleteResponse.builder()
         .message("삭제 완료되었습니다.")
+        .build();
+
+    return ResponseEntity.ok(response);
+  }
+
+  @Operation(summary = "토큰 갱신 API")
+  @PostMapping("/refresh")
+  public ResponseEntity<SignInResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
+    String refreshToken = request.getRefreshToken();
+
+    // Refresh token 검증
+    if (!jwtUtil.validateToken(refreshToken)) {
+      return ResponseEntity.status(401).build();
+    }
+
+    String username = jwtUtil.getUsername(refreshToken);
+
+    // Redis에 저장된 refresh token과 비교
+    if (!refreshTokenService.validateRefreshToken(username, refreshToken)) {
+      return ResponseEntity.status(401).build();
+    }
+
+    // 새로운 access token 발급
+    Set<String> roles = userService.getRolesByUsername(username);
+    String newAccessToken = jwtUtil.generateToken(username, roles);
+
+    SignInResponse response = SignInResponse.builder()
+        .username(username)
+        .roles(roles)
+        .accessToken(newAccessToken)
+        .refreshToken(refreshToken)
+        .build();
+
+    return ResponseEntity.ok(response);
+  }
+
+  @Operation(summary = "로그아웃 API")
+  @PostMapping("/logout")
+  public ResponseEntity<DeleteResponse> logout(@Valid @RequestBody RefreshTokenRequest request) {
+    String refreshToken = request.getRefreshToken();
+
+    if (jwtUtil.validateToken(refreshToken)) {
+      String username = jwtUtil.getUsername(refreshToken);
+      if (refreshTokenService.validateRefreshToken(username, refreshToken)) {
+        refreshTokenService.deleteByUsername(username);
+      }
+    }
+
+    DeleteResponse response = DeleteResponse.builder()
+        .message("로그아웃 되었습니다.")
         .build();
 
     return ResponseEntity.ok(response);

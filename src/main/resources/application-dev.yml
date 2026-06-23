@@ -9,10 +9,15 @@ spring:
     username: ${db.username}
     password: ${db.password}
 
+  data:
+    redis:
+      host: ${REDIS_HOST:tr-redis}
+      port: ${REDIS_PORT:${redis.port}}
+      password: ${REDIS_PASSWORD:${redis.password}}
+
 # log
 logging:
   level:
     org.hibernate.SQL: debug
     org.hibernate.type.descriptor.sql.BasicBinder: trace
-
 

@@ -22,6 +22,7 @@ public class UserResponse {
     private String username;
     private Set<String> roles;
     private String accessToken;
+    private String refreshToken;
 
     public static Set<String> roleTypeCasting(Set<UserRole> userRoles) {
       return userRoles.stream()

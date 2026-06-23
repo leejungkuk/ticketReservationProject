@@ -24,17 +24,18 @@ spring:
   # Redis
   data:
     redis:
-      host: ${redis.host}
-      port: ${redis.port}
-      password: ${redis.password}
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:${redis.port}}
+      password: ${REDIS_PASSWORD:${redis.password}}
 
   jwt:
     secretKey: ${jwt.secretKey}
+    access-token-expiration: 3600000  # 1시간 (밀리초)
+    refresh-token-expiration: 604800000  # 7일 (밀리초)
 
 # log
 logging:
   level:
     org.hibernate.SQL: debug
     org.hibernate.type.descriptor.sql.BasicBinder: trace
-
 
