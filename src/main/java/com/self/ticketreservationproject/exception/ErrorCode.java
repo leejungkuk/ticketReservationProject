@@ -7,6 +7,12 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ErrorCode {
   INVALID_REQUEST(400, "잘못된 요청입니다."),
+  // token
+  INVALID_ACCESS_TOKEN(401, "유효하지 않은 Access Token입니다."),
+  EXPIRED_ACCESS_TOKEN(401, "만료된 Access Token입니다."),
+  INVALID_REFRESH_TOKEN(401, "유효하지 않은 Refresh Token입니다."),
+  EXPIRED_REFRESH_TOKEN(401, "만료된 Refresh Token입니다."),
+  REFRESH_TOKEN_NOT_FOUND(401, "Refresh Token을 찾을 수 없습니다."),
   // user
   USERNAME_ALREADY_EXIST(400, "이미 존재하는 ID 입니다."),
   INVALID_PASSWORD(400, "비밀번호가 일치하지 않습니다."),

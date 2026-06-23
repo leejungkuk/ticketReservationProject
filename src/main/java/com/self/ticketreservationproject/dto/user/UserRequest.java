@@ -50,6 +50,10 @@ public class UserRequest {
     private String email;
   }
 
-
+  @Data
+  public static class RefreshTokenRequest {
+    @NotBlank(message = "Refresh token은 필수 항목입니다.")
+    private String refreshToken;
+  }
 
 }
