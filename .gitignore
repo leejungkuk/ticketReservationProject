@@ -38,3 +38,11 @@ out/
 # 민감정보
 .env
 account_info.yml
+account_info.env
+redis.conf
+
+# JMeter generated artifacts
+jmeter.log
+performance/jmeter/generated/
+performance/jmeter/results/
+performance/jmeter/report/
