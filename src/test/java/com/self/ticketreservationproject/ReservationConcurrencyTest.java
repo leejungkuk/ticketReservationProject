@@ -3,13 +3,22 @@ package com.self.ticketreservationproject;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.self.ticketreservationproject.domain.show.ShowInfo;
 import com.self.ticketreservationproject.dto.reservation.ReservationRequest.ConfirmRequest;
 import com.self.ticketreservationproject.dto.reservation.ReservationRequest.ReserveRequest;
+import com.self.ticketreservationproject.dto.show.ShowRequest.CreateScheduleRequest;
+import com.self.ticketreservationproject.dto.show.ShowRequest.UploadShowInfoRequest;
+import com.self.ticketreservationproject.dto.user.UserRequest;
 import com.self.ticketreservationproject.repository.show.ShowSeatRepository;
 import com.self.ticketreservationproject.security.JwtUtil;
+import com.self.ticketreservationproject.service.ShowService;
+import com.self.ticketreservationproject.service.UserService;
+import jakarta.persistence.EntityManager;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -22,11 +31,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@Transactional
 public class ReservationConcurrencyTest {
 
   @Autowired
@@ -41,11 +48,14 @@ public class ReservationConcurrencyTest {
   @Autowired
   private ShowSeatRepository showSeatRepository;
 
-  private static final long SEAT_ID = 51L;
+  @Autowired
+  private UserService userService;
 
-  private static final String USER1 = "testid1";
-  private static final String USER2 = "testid2";
-  private static final String USER3 = "testid3";
+  @Autowired
+  private ShowService showService;
+
+  @Autowired
+  private EntityManager entityManager;
 
   private String generateJwt(String username) {
     Set<String> roles = Set.of("ROLE_USER");
@@ -54,26 +64,28 @@ public class ReservationConcurrencyTest {
 
   @Test
   void concurrencyTest() throws Exception {
-    String token1 = generateJwt(USER1);
-    String token2 = generateJwt(USER2);
-    String token3 = generateJwt(USER3);
-
-    List<String> tokens = List.of(token1, token2, token3);
+    TestData testData = createTestData("db");
+    Long seatId = testData.seatId();
+    List<String> tokens = testData.tokens();
 
     int threadCount = 3;
     ExecutorService executor = Executors.newFixedThreadPool(threadCount);
-    CountDownLatch latch = new CountDownLatch(threadCount);
+    CountDownLatch readyLatch = new CountDownLatch(threadCount);
+    CountDownLatch startLatch = new CountDownLatch(1);
+    CountDownLatch doneLatch = new CountDownLatch(threadCount);
 
     List<Future<Integer>> results = new ArrayList<>();
 
     for (String token : tokens) {
       Future<Integer> future = executor.submit(() -> {
         try {
+          readyLatch.countDown();
+          startLatch.await();
           String username = jwtUtil.getUsername(token);
           ReserveRequest req =
               new ReserveRequest();
           req.setUsername(username);
-          req.setSeatId(SEAT_ID);
+          req.setSeatId(seatId);
 
           String json = objectMapper.writeValueAsString(req);
 
@@ -87,14 +99,17 @@ public class ReservationConcurrencyTest {
 
           return result.getResponse().getStatus();
         } finally {
-          latch.countDown();
+          doneLatch.countDown();
         }
       });
 
       results.add(future);
     }
 
-    latch.await();
+    readyLatch.await();
+    startLatch.countDown();
+    doneLatch.await();
+    executor.shutdownNow();
 
     int success = 0;
     int fail = 0;
@@ -116,18 +131,22 @@ public class ReservationConcurrencyTest {
 
     int confirmThreadCount = 3;
     ExecutorService confirmExecutor = Executors.newFixedThreadPool(confirmThreadCount);
-    CountDownLatch confirmLatch = new CountDownLatch(confirmThreadCount);
+    CountDownLatch confirmReadyLatch = new CountDownLatch(confirmThreadCount);
+    CountDownLatch confirmStartLatch = new CountDownLatch(1);
+    CountDownLatch confirmDoneLatch = new CountDownLatch(confirmThreadCount);
 
     List<Future<Integer>> confirmResults = new ArrayList<>();
 
     for (String token : tokens) {
       Future<Integer> future = confirmExecutor.submit(() -> {
         try {
+          confirmReadyLatch.countDown();
+          confirmStartLatch.await();
           String username = jwtUtil.getUsername(token);
           ConfirmRequest req =
               new ConfirmRequest();
           req.setUsername(username);
-          req.setSeatIds(List.of(SEAT_ID));
+          req.setSeatIds(List.of(seatId));
 
           String json = objectMapper.writeValueAsString(req);
 
@@ -141,14 +160,17 @@ public class ReservationConcurrencyTest {
 
           return result.getResponse().getStatus();
         } finally {
-          confirmLatch.countDown();
+          confirmDoneLatch.countDown();
         }
       });
 
       confirmResults.add(future);
     }
 
-    confirmLatch.await();
+    confirmReadyLatch.await();
+    confirmStartLatch.countDown();
+    confirmDoneLatch.await();
+    confirmExecutor.shutdownNow();
 
     int confirmSuccess = 0;
     int confirmFail = 0;
@@ -172,23 +194,23 @@ public class ReservationConcurrencyTest {
   // redis 테스트
   @Test
   void concurrencyTestWithRedis() throws Exception {
-    long seatId = 51L;
-
-    String token1 = generateJwt(USER1);
-    String token2 = generateJwt(USER2);
-    String token3 = generateJwt(USER3);
-
-    List<String> tokens = List.of(token1, token2, token3);
+    TestData testData = createTestData("redis");
+    long seatId = testData.seatId();
+    List<String> tokens = testData.tokens();
 
     int threadCount = 3;
     ExecutorService executor = Executors.newFixedThreadPool(threadCount);
-    CountDownLatch latch = new CountDownLatch(threadCount);
+    CountDownLatch readyLatch = new CountDownLatch(threadCount);
+    CountDownLatch startLatch = new CountDownLatch(1);
+    CountDownLatch doneLatch = new CountDownLatch(threadCount);
 
     List<Future<Integer>> results = new ArrayList<>();
 
     for (String token : tokens) {
       Future<Integer> future = executor.submit(() -> {
         try {
+          readyLatch.countDown();
+          startLatch.await();
           String username = jwtUtil.getUsername(token);
 
           ReserveRequest req = new ReserveRequest();
@@ -207,14 +229,17 @@ public class ReservationConcurrencyTest {
 
           return result.getResponse().getStatus();
         } finally {
-          latch.countDown();
+          doneLatch.countDown();
         }
       });
 
       results.add(future);
     }
 
-    latch.await();
+    readyLatch.await();
+    startLatch.countDown();
+    doneLatch.await();
+    executor.shutdownNow();
 
     int reserveSuccess = 0;
     int reserveFail = 0;
@@ -232,13 +257,17 @@ public class ReservationConcurrencyTest {
 
 //    // confirm test
     ExecutorService confirmExecutor = Executors.newFixedThreadPool(3);
-    CountDownLatch confirmLatch = new CountDownLatch(3);
+    CountDownLatch confirmReadyLatch = new CountDownLatch(3);
+    CountDownLatch confirmStartLatch = new CountDownLatch(1);
+    CountDownLatch confirmDoneLatch = new CountDownLatch(3);
     List<Future<Integer>> confirmResults = new ArrayList<>();
 
     for (String token : tokens) {
 
       Future<Integer> future = confirmExecutor.submit(() -> {
         try {
+          confirmReadyLatch.countDown();
+          confirmStartLatch.await();
           String username = jwtUtil.getUsername(token);
           // 테스트용
           long scheduleId = showSeatRepository.findScheduleIdById(seatId);
@@ -261,7 +290,7 @@ public class ReservationConcurrencyTest {
           return result.getResponse().getStatus();
 
         } finally {
-          confirmLatch.countDown();
+          confirmDoneLatch.countDown();
         }
       });
 
@@ -269,7 +298,10 @@ public class ReservationConcurrencyTest {
     }
 
 
-    confirmLatch.await();
+    confirmReadyLatch.await();
+    confirmStartLatch.countDown();
+    confirmDoneLatch.await();
+    confirmExecutor.shutdownNow();
 
     int confirmSuccess = 0;
     int confirmFail = 0;
@@ -285,5 +317,57 @@ public class ReservationConcurrencyTest {
     // 최종 검증
     Assertions.assertEquals(1, confirmSuccess);
     Assertions.assertEquals(2, confirmFail);
+  }
+
+  private TestData createTestData(String prefix) {
+    List<String> usernames = new ArrayList<>();
+    List<String> tokens = new ArrayList<>();
+
+    for (int i = 0; i < 3; i++) {
+      String username = unique(prefix + "user" + i);
+      userService.createUser(registerRequest(username));
+      usernames.add(username);
+      tokens.add(generateJwt(username));
+    }
+
+    ShowInfo show = showService.createShow(showRequest(unique(prefix + "show")));
+    CreateScheduleRequest scheduleRequest = new CreateScheduleRequest();
+    scheduleRequest.setStartTimes(List.of(LocalDateTime.now().plusDays(30).withNano(0)));
+    showService.createShowSchedule(show.getId(), scheduleRequest);
+    Long seatId = entityManager.createQuery("""
+            select s.id
+            from ShowSeat s
+            where s.showSchedule.showInfo.id = :showId
+            order by s.id
+            """, Long.class)
+        .setParameter("showId", show.getId())
+        .setMaxResults(1)
+        .getSingleResult();
+
+    return new TestData(usernames, tokens, seatId);
+  }
+
+  private UserRequest.RegisterRequest registerRequest(String username) {
+    UserRequest.RegisterRequest request = new UserRequest.RegisterRequest();
+    request.setUsername(username);
+    request.setPassword("password1234");
+    request.setEmail(username + "@email.com");
+    request.setName(username);
+    return request;
+  }
+
+  private UploadShowInfoRequest showRequest(String title) {
+    UploadShowInfoRequest request = new UploadShowInfoRequest();
+    request.setTitle(title);
+    request.setDescription("description");
+    request.setRuntime(100);
+    return request;
+  }
+
+  private String unique(String prefix) {
+    return prefix + UUID.randomUUID().toString().replace("-", "").substring(0, 12);
+  }
+
+  private record TestData(List<String> usernames, List<String> tokens, Long seatId) {
   }
 }

@@ -46,6 +46,7 @@ public class ShowInfo {
   @Column(name = "runtime")
   private int runtime; // 분 단위
 
+  @Builder.Default
   @OneToMany(mappedBy = "showInfo", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<ShowSchedule> schedules = new ArrayList<>();
 
